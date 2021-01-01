@@ -66,6 +66,8 @@ class SAR_Project:
         self.use_ranking = False  # valor por defecto, se cambia con self.set_ranking()
         self.sections = ["article"]
 
+        #ALGORITMICA
+        self.vocabulary = []
     ###############################
     ###                         ###
     ###      CONFIGURACION      ###
@@ -164,6 +166,9 @@ class SAR_Project:
         if self.stemming:
             self.make_stemming()
         print("Indexing complete!")
+
+        #ALGORITMICA
+        self.make_vocab()
         ##########################################
         ## COMPLETAR PARA FUNCIONALIDADES EXTRA ##
         ##########################################
@@ -203,6 +208,7 @@ class SAR_Project:
                     pos = 0
                     for token in tokens:
                         aux[token] = aux.get(token, 0) + 1 # se cuentan las ocurrencias del token
+                        self.vocabulary.append(token)
                     if self.positional:
                         for token in tokens:
                             pos+=1 # contador para saber en qué posición está cada token
@@ -211,7 +217,7 @@ class SAR_Project:
                     for word in aux:
                         self.index[section][word] = self.index[section].get(word, []) # si no existe se crea una lista
                         self.index[section][word].append(Posting(self.news_id, aux[word], position.get(word, None))) # se crea el posting_list del token en la noticia en la sección
-        #
+        #   
         # "jlist" es una lista con tantos elementos como noticias hay en el fichero,
         # cada noticia es un diccionario con los campos:
         #      "title", "keywords", "article", "summary"
@@ -224,6 +230,9 @@ class SAR_Project:
         ### COMPLETAR ###
         #################
 
+    # ALGORITMICA
+    def make_vocab(self):
+        self.vocabulary = list(set(self.vocabulary))
 
     def tokenize(self, text):
         """
@@ -803,11 +812,9 @@ class SAR_Project:
         """
         vocab_file_path = "./corpora/quijote.txt"
         sp = spellsuggest.TrieSpellSuggester(vocab_file_path)
-        fn = open(vocab_file_path, "r", encoding='utf-8')
-        palabros = fn.read()
 
         for term in terms:
-            if term not in palabros:
+            if term not in self.vocabulary:
                 rw = sp.suggest(term, threshold=1)
                 new_query = query.replace(term, list(rw)[0])
 
