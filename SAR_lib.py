@@ -169,6 +169,7 @@ class SAR_Project:
 
         #ALGORITMICA
         self.make_vocab()
+
         ##########################################
         ## COMPLETAR PARA FUNCIONALIDADES EXTRA ##
         ##########################################
@@ -233,6 +234,10 @@ class SAR_Project:
     # ALGORITMICA
     def make_vocab(self):
         self.vocabulary = list(set(self.vocabulary))
+        fn = open("vocabulary.txt", "w", encoding="utf-8")
+        for word in self.vocabulary: 
+            fn.write(word + " ")
+        fn.close()
 
     def tokenize(self, text):
         """
@@ -810,13 +815,13 @@ class SAR_Project:
         
         return: query modificada
         """
-        vocab_file_path = "./corpora/quijote.txt"
-        sp = spellsuggest.TrieSpellSuggester(vocab_file_path)
-
+        
+        sp = spellsuggest.TrieSpellSuggester("./vocabulary.txt")
         for term in terms:
             if term not in self.vocabulary:
                 rw = sp.suggest(term, threshold=1)
                 new_query = query.replace(term, list(rw)[0])
+                query = new_query
 
         print("Quizá quisiste decir: ", new_query)
         return new_query
@@ -839,7 +844,7 @@ class SAR_Project:
 
         return: el numero de noticias recuperadas, para la opcion -T
 
-        """
+        """ 
         result = self.solve_query(query)
         if len(result[0]) == 0:
             # ALGORITMICA
