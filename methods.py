@@ -68,7 +68,26 @@ class SpellSuggester:
                 results[word] = dist
         return results
 
+
     def lev(self, a, b, threshold=None):
+	    if threshold is None: 
+	        threshold = 99
+	    d=dict()
+	    for i in range(len(a)+1):
+	        d[i]=dict()
+	        d[i][0] = i
+	    for j in range(len(b)+1):
+	        d[0][j] = j
+	    for i in range(1, len(a)+1):
+	        for j in range(1, len(b)+1):
+	            d[i][j] = min(d[i-1][j]  + 1,       #borrado
+	                         d[i][j-1]   + 1,       #insercion
+	                         d[i-1][j-1] + (not a[i-1]==b[j-1]))   #sustitucion
+	    dist = d[len(a)][len(b)]
+	    return dist if dist <= threshold else None ## Si la distancia es mayor y se nos ha pasado pues no lo ponemos
+
+
+    def lev_threshold(self, a, b, threshold=None):
         if threshold is None: 
             threshold = 99
         if(abs(len(a) - len(b)) > threshold): # La distancia de edicion siempre sera mayor
@@ -129,8 +148,38 @@ class SpellSuggester:
         dist = d[len(a)][len(b)]
         return dist if dist <= threshold else None ## Esto necesita mejora pero lo ponemos porque mira
 
-  
+
+    def lev_trie(a, trie, threshold=99):
+    d=dict()
+
+    for i in range(len(a)+1):
+        d[i]=dict()
+        d[i][0] = i
+	
+	# Distancia en root    
+    d[0][trie.get_root()] = 0
+    for node in range(1, trie.get_num_states()):
+    	d[0][node] = d[0][t.get_parent(node)]+1
+
+
+    for i in range(1, len(a)+1):
     
+        for node in range(1, trie.get_num_states()):
+            d[i][node] = min(d[i-1][node] + 1,       #borrado
+    
+                         d[i][trie.get_parent(node)] + 1,       #insercion
+    
+                         d[i-1][trie.get_parent(node)] + (not a[i-1]==trie.get_label(node)))   #sustitucion
+        if min(d[i].values()) > threshold:
+            return None
+    dist = 999
+    for i in d[len(a)]:
+        if(d[len(a)][i] < dist and trie.is_final(i)):
+            dist = d[len(a)][i]
+        
+    return dist if dist <= threshold else None ## Si la distancia es mayor y se nos ha pasado pues no lo ponemos
+
+
 
 class TrieSpellSuggester(SpellSuggester):
     """
