@@ -52,24 +52,26 @@ class SpellSuggester:
                 puede utilizarse con los algoritmos de distancia mejorada de la tarea 2
                 o filtrando la salida de las distancias de la tarea 2
         """
-        assert distance in ["levenshtein", "restricted", "intermediate"]
+        assert distance in ["levenshtein","lev_trie", "restricted", "intermediate"]
 
         results = {} # diccionario termino:distancia
         # TODO
         for word in self.vocabulary:
             if distance == "levenshtein":
                 dist = self.lev(word, term, threshold)
+            elif distance == "lev_trie":
+                dist = self.lev_trie(term, Trie([word]), threshold)
             elif distance == "restricted":
                 dist = self.dam_lev(word, term, threshold)
             else:
                 dist = self.intermedia(word, term, threshold)
-            
+
             if(dist is not None):
                 results[word] = dist
         return results
 
     def lev(self, a, b, threshold=None):
-        if threshold is None: 
+        if threshold is None:
             threshold = 99
         if(abs(len(a) - len(b)) > threshold): # La distancia de edicion siempre sera mayor
             return None
@@ -86,11 +88,15 @@ class SpellSuggester:
                              d[i-1][j-1] + (not a[i-1]==b[j-1]))   #sustitucion
             if(min(d[i].values()) > threshold): # La distancia ya sera mayor si o si
                 return None
-            
+
         dist = d[len(a)][len(b)]
         return dist if dist <= threshold else None ## Si la distancia es mayor y se nos ha pasado pues no lo ponemos
 
     def dam_lev(self, a, b, threshold=None):
+        if(threshold is None):
+            threshold = 99
+        if(abs(len(a) - len(b)) > threshold): # La distancia de edicion siempre sera mayor
+            return None
         d=dict()
         for i in range(len(a)+1):
             d[i]=dict()
@@ -104,10 +110,16 @@ class SpellSuggester:
                              d[i-1][j-1] + (not a[i-1]==b[j-1]))          #sustitucion
                 if i>1 and j>1 and a[i-2] == b[j-1] and a[i-1] == b[j-2]: # condición restringida
                         d[i][j] = min(d[i][j], d[i-2][j-2] + 1)
+            if(min(d[i].values()) > threshold): # La distancia ya sera mayor si o si
+                return None
         dist = d[len(a)][len(b)]
         return dist if dist <= threshold else None ## Esto necesita mejora pero lo ponemos porque mira
-        
+
     def intermedia(self, a, b, threshold=None):
+        if threshold is None:
+            threshold = 99
+        if(abs(len(a) - len(b)) > threshold): # La distancia de edicion siempre sera mayor
+            return None
         CTE = 3
         d=dict()
         for i in range(len(a)+1):
@@ -126,11 +138,42 @@ class SpellSuggester:
                         d[i][j] = min(d[i][j], d[i-3][j-2] + 2)
                 if i>1 and j>2 and a[i-1] == b[j-3] and a[i-2] == b[j-1]: # condición intermedia
                         d[i][j] = min(d[i][j], d[i-2][j-3] + 2)
+            if(min(d[i].values()) > threshold): # La distancia ya sera mayor si o si
+                return None
         dist = d[len(a)][len(b)]
-        return dist if dist <= threshold else None ## Esto necesita mejora pero lo ponemos porque mira
+        return dist if dist <= threshold else None
 
-  
-    
+    def lev_trie(self, a, trie, threshold=None):
+        if(threshold == None):
+            threshold = 99
+        d=dict()
+
+        for i in range(len(a)+1):
+            d[i]=dict()
+            d[i][0] = i
+
+    	# Distancia en root
+        d[0][trie.get_root()] = 0
+        for node in range(1, trie.get_num_states()):
+        	d[0][node] = d[0][trie.get_parent(node)]+1
+
+        for i in range(1, len(a)+1):
+
+            for node in range(1, trie.get_num_states()):
+                d[i][node] = min(d[i-1][node] + 1,       #borrado
+
+                             d[i][trie.get_parent(node)] + 1,       #insercion
+
+                             d[i-1][trie.get_parent(node)] + (not a[i-1]==trie.get_label(node)))   #sustitucion
+            if min(d[i].values()) > threshold:
+                return None
+        dist = 999
+        for i in d[len(a)]:
+            if(d[len(a)][i] < dist and trie.is_final(i)):
+                dist = d[len(a)][i]
+
+        return dist if dist <= threshold else None ## Si la distancia es mayor y se nos ha pasado pues no lo ponemos
+
 
 class TrieSpellSuggester(SpellSuggester):
     """
@@ -139,9 +182,9 @@ class TrieSpellSuggester(SpellSuggester):
     def __init__(self, vocab_file_path):
         super().__init__(vocab_file_path)
         self.trie = Trie(self.vocabulary)
-    
+
 if __name__ == "__main__":
     spellsuggester = TrieSpellSuggester("./corpora/quijote.txt")
     #print(spellsuggester.suggest("alábese",distance="intermediate", threshold = 2))
     # cuidado, la salida es enorme print(suggester.trie)
-    print(spellsuggester.suggest("alabese", threshold=3))
+    print(spellsuggester.lev_trie("cocholate", Trie(["chocolate"]), 3))
