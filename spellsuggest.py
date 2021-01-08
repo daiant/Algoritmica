@@ -2,12 +2,17 @@
 import re
 import numpy as np
 from trie import Trie
+import time
+import statistics
+
+
 
 class SpellSuggester:
-
     """
     Clase que implementa el Método suggest para la búsqueda de términos.
     """
+    def ini_time_lev(self):
+        self.time_lev = []
 
     def __init__(self, vocab_file_path):
         """Método constructor de la clase SpellSuggester
@@ -53,9 +58,9 @@ class SpellSuggester:
                 o filtrando la salida de las distancias de la tarea 2
         """
         assert distance in ["levenshtein","lev_trie", "restricted", "intermediate"]
-
         results = {} # diccionario termino:distancia
         # TODO
+        self.ini_time_lev()
         for word in self.vocabulary:
             if distance == "levenshtein":
                 dist = self.lev(word, term, threshold)
@@ -68,6 +73,11 @@ class SpellSuggester:
 
             if(dist is not None):
                 results[word] = dist
+
+        if(distance == "lev_trie"):
+            print(sum(self.time_lev))
+            self.ini_time_lev()
+
         return results
 
     def lev(self, a, b, threshold=None):
@@ -144,6 +154,7 @@ class SpellSuggester:
         return dist if dist <= threshold else None
 
     def lev_trie(self, a, trie, threshold=None):
+        t1 = time.process_time()
         if(threshold == None):
             threshold = 99
         d=dict()
@@ -171,7 +182,8 @@ class SpellSuggester:
         for i in d[len(a)]:
             if(d[len(a)][i] < dist and trie.is_final(i)):
                 dist = d[len(a)][i]
-
+        t2 = time.process_time() - t1
+        self.time_lev.append(t2)
         return dist if dist <= threshold else None ## Si la distancia es mayor y se nos ha pasado pues no lo ponemos
 
 
@@ -187,4 +199,4 @@ if __name__ == "__main__":
     spellsuggester = TrieSpellSuggester("./corpora/quijote.txt")
     #print(spellsuggester.suggest("alábese",distance="intermediate", threshold = 2))
     # cuidado, la salida es enorme print(suggester.trie)
-    print(spellsuggester.lev_trie("cocholate", Trie(["chocolate"]), 3))
+    print(spellsuggester.suggest("cocholate", Trie(["chocolate"]), 3))
