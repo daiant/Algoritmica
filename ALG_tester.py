@@ -49,18 +49,26 @@ def generateTable(inputWord, divisorTalla, maxThreshold, reps=1):
     for funcname in functions:
         measures[funcname] = {} # asocia a cada talla una lista de (tiempo, estados)
     for funcname in functions:
+        print("Algoritmo\t Talla\t Threshold\n")
+
         for n in range(1, divisorTalla+1):
-            #print("El divisor de la talla es ", n)
-            for thr in range(0, maxThreshold+1):
-                if thr == 0:
-                    thr = None
-                tallaF = sorted_vocab[:(math.ceil(len(sorted_vocab)/n))]
-                #print("Función", funcname, "- talla de diccionario:", math.ceil(len(sorted_vocab)/n), "- margen:", thr)
+            tallaF = sorted_vocab[:(math.ceil(len(sorted_vocab)/n))]
+
+            for threshold in range(0, maxThreshold+1):
+                if threshold == 0:
+                    threshold = None
+                print(funcname, "\t", math.ceil(len(sorted_vocab)/n),"\t",  threshold)
+                #print("Función", funcname, "- talla de diccionario:", math.ceil(len(sorted_vocab)/n), "- margen:", threshold)
                 measures[funcname] = measureTime(funcname, inputWord, tallaF, None, reps)
+                print("Tiempo de media", round(measures[funcname][0], 3), "s" )
+        print("-------------------------------")
     #print(measures)
 
 
 
 #código prueba para asegurar que funciona
 if __name__ == "__main__":
-    generateTable("casa",2,2,3)
+    palabros = ["casa", "abeto", "circo", "puerco"]
+    for palabro in palabros:
+        print("Análisis para: ", palabro)
+        generateTable(palabro,2,3,2)
