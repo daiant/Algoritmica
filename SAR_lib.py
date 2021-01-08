@@ -68,12 +68,18 @@ class SAR_Project:
 
         #ALGORITMICA
         self.vocabulary = []
+        self.threshold = 2
+        self.algorithm = "lev"
     ###############################
     ###                         ###
     ###      CONFIGURACION      ###
     ###                         ###
     ###############################
 
+    def set_threshold(self, t):
+        self.threshold = t
+    def set_algorithm(self, a):
+        self.algorithm = a
 
     def set_showall(self, v):
         """
@@ -152,7 +158,6 @@ class SAR_Project:
         los argumentos adicionales "**args" solo son necesarios para las funcionalidades ampliadas
 
         """
-
         self.multifield = args['multifield']
         self.positional = args['positional']
         self.stemming = args['stem']
@@ -218,7 +223,7 @@ class SAR_Project:
                     for word in aux:
                         self.index[section][word] = self.index[section].get(word, []) # si no existe se crea una lista
                         self.index[section][word].append(Posting(self.news_id, aux[word], position.get(word, None))) # se crea el posting_list del token en la noticia en la sección
-        #   
+        #
         # "jlist" es una lista con tantos elementos como noticias hay en el fichero,
         # cada noticia es un diccionario con los campos:
         #      "title", "keywords", "article", "summary"
@@ -235,7 +240,7 @@ class SAR_Project:
     def make_vocab(self):
         self.vocabulary = list(set(self.vocabulary))
         fn = open("vocabulary.txt", "w", encoding="utf-8")
-        for word in self.vocabulary: 
+        for word in self.vocabulary:
             fn.write(word + " ")
         fn.close()
 
@@ -806,22 +811,24 @@ class SAR_Project:
         """
         ALGORITMICA
 
-        Devuelve una consulta relacionada a la original en la que se sugieren terminos para los que 
+        Devuelve una consulta relacionada a la original en la que se sugieren terminos para los que
         en principio no estaban en el diccionario
 
         param: "query": query original que se debe modificar
 
         param: "terms": terminos con los que buscar relacionados
-        
+
         return: query modificada
         """
-        
+
         sp = spellsuggest.TrieSpellSuggester("./vocabulary.txt")
+        new_query = query
         for term in terms:
             if term not in self.vocabulary:
-                rw = sp.suggest(term, threshold=1)
-                new_query = query.replace(term, list(rw)[0])
-                query = new_query
+                rw = sp.suggest(term, threshold=self.threshold, distance=self.algorithm)
+                if rw:
+                    new_query = query.replace(term, list(rw)[0])
+                    query = new_query
 
         print("Quizá quisiste decir: ", new_query)
         return new_query
@@ -844,7 +851,7 @@ class SAR_Project:
 
         return: el numero de noticias recuperadas, para la opcion -T
 
-        """ 
+        """
         result = self.solve_query(query)
         if len(result[0]) == 0:
             # ALGORITMICA
@@ -883,6 +890,7 @@ class SAR_Project:
             result = self.rank_result(result, queryTerms)
 
         print("Query: {}\nNumber of results: {}\n".format(query, len(result)))
+
         if result != []:
             #we get a list of all ids of the articles found
             ids = [x.news_id for x in result]
